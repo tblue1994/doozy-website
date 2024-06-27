@@ -233,7 +233,7 @@ export function Link({ to, href, ...props }: WithChildren<LinkProps>) {
   if (isAbsoluteURL(url)) {
     return (
       // eslint-disable-next-line jsx-a11y/anchor-has-content
-      <a href={url} className={styles.link} {...props} />
+      <a href={url} target='_blank' className={styles.link} {...props} />
     )
   }
   return <GatsbyLink to={url} className={styles.link} {...props} />

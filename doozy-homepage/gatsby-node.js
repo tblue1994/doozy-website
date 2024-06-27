@@ -2,81 +2,81 @@ const { documentToHtmlString } = require("@contentful/rich-text-html-renderer")
 const { getGatsbyImageResolver } = require("gatsby-plugin-image/graphql-utils")
 
 exports.createSchemaCustomization = async ({ actions }) => {
-  actions.createFieldExtension({
-    name: "blocktype",
-    extend(options) {
-      return {
-        resolve(source) {
-          return source.internal.type.replace("Contentful", "")
+    actions.createFieldExtension({
+        name: "blocktype",
+        extend(options) {
+            return {
+                resolve(source) {
+                    return source.internal.type.replace("Contentful", "")
+                },
+            }
         },
-      }
-    },
-  })
+    })
 
-  actions.createFieldExtension({
-    name: "imagePassthroughArgs",
-    extend(options) {
-      const { args } = getGatsbyImageResolver()
-      return {
-        args,
-      }
-    },
-  })
-
-  actions.createFieldExtension({
-    name: "imageUrl",
-    extend(options) {
-      const schemaRE = /^\/\//
-      const addURLSchema = (str) => {
-        if (schemaRE.test(str)) return `https:${str}`
-        return str
-      }
-      return {
-        resolve(source) {
-          return addURLSchema(source.file.url)
+    actions.createFieldExtension({
+        name: "imagePassthroughArgs",
+        extend(options) {
+            const { args } = getGatsbyImageResolver()
+            return {
+                args,
+            }
         },
-      }
-    },
-  })
+    })
 
-  actions.createFieldExtension({
-    name: "navItemType",
-    args: {
-      name: {
-        type: "String!",
-        defaultValue: "Link",
-      },
-    },
-    extend(options) {
-      return {
-        resolve() {
-          switch (options.name) {
-            case "Group":
-              return "Group"
-            default:
-              return "Link"
-          }
+    actions.createFieldExtension({
+        name: "imageUrl",
+        extend(options) {
+            const schemaRE = /^\/\//
+            const addURLSchema = (str) => {
+                if (schemaRE.test(str)) return `https:${str}`
+                return str
+            }
+            return {
+                resolve(source) {
+                    return addURLSchema(source.file.url)
+                },
+            }
         },
-      }
-    },
-  })
+    })
 
-  actions.createFieldExtension({
-    name: "richText",
-    extend(options) {
-      return {
-        resolve(source, args, context, info) {
-          const body = source.body
-          const doc = JSON.parse(body.raw)
-          const html = documentToHtmlString(doc)
-          return html
+    actions.createFieldExtension({
+        name: "navItemType",
+        args: {
+            name: {
+                type: "String!",
+                defaultValue: "Link",
+            },
         },
-      }
-    },
-  })
+        extend(options) {
+            return {
+                resolve() {
+                    switch (options.name) {
+                        case "Group":
+                            return "Group"
+                        default:
+                            return "Link"
+                    }
+                },
+            }
+        },
+    })
 
-  // abstract interfaces
-  actions.createTypes(/* GraphQL */ `
+    actions.createFieldExtension({
+        name: "richText",
+        extend(options) {
+            return {
+                resolve(source, args, context, info) {
+                    const body = source.body
+                    const doc = JSON.parse(body.raw)
+                    const html = documentToHtmlString(doc)
+                    return html
+                },
+            }
+        },
+    })
+
+    // abstract interfaces
+    actions.createTypes(/* GraphQL */ `
     interface HomepageBlock implements Node {
       id: ID!
       blocktype: String
@@ -243,6 +243,13 @@ exports.createSchemaCustomization = async ({ actions }) => {
       content: [HomepageBlock]
     }
 
+    interface TeamPage implements Node {
+        id: ID!
+        title: String
+        description: String
+        content: [HomepageBlock]
+      }
+
     interface LayoutHeader implements Node {
       id: ID!
       navItems: [HeaderNavItem]
@@ -342,8 +349,8 @@ exports.createSchemaCustomization = async ({ actions }) => {
     }
   `)
 
-  // CMS-specific types for Homepage
-  actions.createTypes(/* GraphQL */ `
+    // CMS-specific types for Homepage
+    actions.createTypes(/* GraphQL */ `
     type ContentfulHomepageLink implements Node & HomepageLink @dontInfer {
       id: ID!
       href: String
@@ -509,10 +516,17 @@ exports.createSchemaCustomization = async ({ actions }) => {
       image: HomepageImage @link(from: "image___NODE")
       content: [HomepageBlock] @link(from: "content___NODE")
     }
+
+    type ContentfulTeamPage implements Node & TeamPage @dontInfer {
+        id: ID!
+        title: String
+        description: String
+        content: [HomepageBlock] @link(from: "content___NODE")
+      }
   `)
 
-  // CMS specific types for About page
-  actions.createTypes(/* GraphQL */ `
+    // CMS specific types for About page
+    actions.createTypes(/* GraphQL */ `
     type ContentfulAboutHero implements Node & AboutHero & HomepageBlock
       @dontInfer {
       id: ID!
@@ -570,8 +584,8 @@ exports.createSchemaCustomization = async ({ actions }) => {
     }
   `)
 
-  // Layout types
-  actions.createTypes(/* GraphQL */ `
+    // Layout types
+    actions.createTypes(/* GraphQL */ `
     type ContentfulLayoutHeader implements Node & LayoutHeader @dontInfer {
       id: ID!
       navItems: [HeaderNavItem] @link(from: "navItems___NODE")
@@ -599,8 +613,8 @@ exports.createSchemaCustomization = async ({ actions }) => {
     }
   `)
 
-  // Page types
-  actions.createTypes(/* GraphQL */ `
+    // Page types
+    actions.createTypes(/* GraphQL */ `
     type ContentfulPage implements Node & Page {
       id: ID!
       slug: String!
@@ -613,14 +627,13 @@ exports.createSchemaCustomization = async ({ actions }) => {
 }
 
 exports.createPages = ({ actions }) => {
-  const { createSlice } = actions
-  createSlice({
-    id: "header",
-    component: require.resolve("./src/components/header.tsx"),
-  })
-  createSlice({
-    id: "footer",
-    component: require.resolve("./src/components/footer.tsx"),
-  })
+    const { createSlice } = actions
+    createSlice({
+        id: "header",
+        component: require.resolve("./src/components/header.tsx"),
+    })
+    createSlice({
+        id: "footer",
+        component: require.resolve("./src/components/footer.tsx"),
+    })
 }
-      
